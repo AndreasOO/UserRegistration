@@ -83,7 +83,7 @@ public class Component {
     // create insert method that inserts new username, email and password
     public void addUser(User user) throws Exception {
         String username = user.getUsername();
-        String password = user.getPassword(); // NEED TO ENCRYPT/DECRYPT PASSWORD?
+        String password = user.getPassword(); // TODO: NEED TO ENCRYPT/DECRYPT PASSWORD?
         String email = user.getEmail();
 
         if (usernameFound(username)) { // checks if username is available, if not: return and exit method call.
@@ -126,6 +126,7 @@ public class Component {
 
 
             boolean pwFound = false;
+
             while (result.next()) {
                 if (result.getString("user_login_password").equals(password)) {
                     pwFound = true;
@@ -135,6 +136,27 @@ public class Component {
 
 
             return pwFound ? "Logging in user: " + username : "Incorrect password";
+        }
+    }
+
+    public String changePassword(String username, String oldPassword, String newPassword) throws Exception {
+        // check if user has correct current password
+        if (loginUser(username,oldPassword).equals("Incorrect password"))
+            return "Incorrect password, failed to log in";
+
+        try (Connection conn = DriverManager.getConnection(urlDB);
+        PreparedStatement statement = conn.prepareStatement("UPDATE user_login " +
+                                                                "SET user_login_password = ? " +
+                                                                "WHERE user_login_username = ? " +
+                                                                "AND user_login_password = ?");) {
+
+            statement.setString(1,newPassword);
+            statement.setString(2,username);
+            statement.setString(3,oldPassword);
+            statement.executeUpdate();
+
+            // explicit here for debug, remove in production
+            return "Updated password from: " + oldPassword + " to: " + newPassword;
         }
     }
 }
